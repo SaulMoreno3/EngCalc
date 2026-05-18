@@ -71,6 +71,7 @@ pub fn evaluate(expr: &Expr, env: &Environment) -> Result<Value, EvalError> {
                 "trapz" => return eval_integration(args, env, IntegrationMethod::Trapezoidal),
                 "simpson" => return eval_integration(args, env, IntegrationMethod::Simpson),
                 "rkf45" => return eval_integration(args, env, IntegrationMethod::Rkf45),
+                "quadratic" => return eval_quadratic(args, env),
                 _ => {}
             }
 
@@ -506,4 +507,40 @@ fn eval_integration(
     };
 
     Ok(Value::new(result))
+}
+
+fn eval_quadratic(args: &[Expr], env: &Environment) -> Result<Value, EvalError> {
+    if args.len() != 3 {
+        return Err(EvalError::ArgCount {
+            name: "quadratic".to_string(),
+            expected: 3,
+            got: args.len(),
+        });
+    }
+
+    let a = evaluate(&args[0], env)?.number();
+    let b = evaluate(&args[1], env)?.number();
+    let c = evaluate(&args[2], env)?.number();
+
+    if a == 0.0 {
+        return Err(EvalError::InvalidArgument {
+            func: "quadratic".to_string(),
+            reason: "coefficient 'a' cannot be zero".to_string(),
+        });
+    }
+
+    let discriminant = b * b - 4.0 * a * c;
+    if discriminant < 0.0 {
+        return Err(EvalError::InvalidArgument {
+            func: "quadratic".to_string(),
+            reason: "complex roots not supported".to_string(),
+        });
+    }
+
+    let sqrt_d = discriminant.sqrt();
+    let x1 = (-b + sqrt_d) / (2.0 * a);
+    let x2 = (-b - sqrt_d) / (2.0 * a);
+
+    let formatted = format!("({}, {})", x1, x2);
+    Ok(Value::new(x1).with_display_str(formatted))
 }

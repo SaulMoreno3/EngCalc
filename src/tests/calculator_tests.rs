@@ -585,12 +585,12 @@ fn test_integration_with_expression() {
 
 #[test]
 fn test_quadratic_two_real_roots() {
-    assert_approx("quadratic(1, -5, 6)", 3.0, 1e-10);
+    assert_result("quadratic(1, -5, 6)", "(3, 2)");
 }
 
 #[test]
 fn test_quadratic_single_root() {
-    assert_approx("quadratic(1, -2, 1)", 1.0, 1e-10);
+    assert_result("quadratic(1, -2, 1)", "(1, 1)");
 }
 
 #[test]
@@ -601,4 +601,19 @@ fn test_quadratic_negative_discriminant_error() {
 #[test]
 fn test_quadratic_zero_a_error() {
     assert_error("quadratic(0, 1, 1)");
+}
+
+#[test]
+fn test_quadratic_ans_takes_positive_root() {
+    let mut env = Environment::new();
+    for c in crate::core::constants::list() {
+        env.set(c.name.to_string(), crate::core::value::Value::new(c.value));
+    }
+    let ast = parser::parse("quadratic(1, -5, 6)").unwrap();
+    let value = ast.eval(&env).unwrap();
+    env.set("ans".to_string(), value.clone());
+    let ans_val = env.get("ans").expect("ans should be set");
+    assert_eq!(ans_val.number(), 3.0);
+    let formatted = formatter::format_value(&value);
+    assert_eq!(formatted, "(3, 2)");
 }

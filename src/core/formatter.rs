@@ -1,6 +1,10 @@
 use crate::core::value::Value;
 
 pub fn format_value(value: &Value) -> String {
+    if let Some(ref s) = value.display_str {
+        return s.clone();
+    }
+
     if value.is_nan() {
         return "NaN".to_string();
     }

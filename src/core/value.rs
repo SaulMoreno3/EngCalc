@@ -7,6 +7,7 @@ use std::fmt;
 pub struct Value {
     pub number: f64,
     pub unit: Option<CompoundUnit>,
+    pub display_str: Option<String>,
 }
 
 impl Value {
@@ -14,6 +15,7 @@ impl Value {
         Self {
             number,
             unit: None,
+            display_str: None,
         }
     }
 
@@ -21,6 +23,7 @@ impl Value {
         Self {
             number,
             unit: Some(unit),
+            display_str: None,
         }
     }
 
@@ -44,6 +47,11 @@ impl Value {
 
     pub fn number(&self) -> f64 {
         self.number
+    }
+
+    pub fn with_display_str(mut self, display: String) -> Self {
+        self.display_str = Some(display);
+        self
     }
 
     /// Check if this value has compatible dimensions with another

@@ -307,6 +307,7 @@ pub fn call(name: &str, args: &[f64]) -> Result<f64, FuncError> {
             }
             let sqrt_d = discriminant.sqrt();
             let x1 = (-b + sqrt_d) / (2.0 * a);
+            let x2 = (-b - sqrt_d) / (2.0 * a);
             Ok(x1)
         }
         _ => Err(FuncError::Unknown),
