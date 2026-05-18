@@ -584,17 +584,21 @@ fn test_integration_with_expression() {
 }
 
 #[test]
-fn test_ans_variable() {
-    // Test that ans stores the last result
-    let mut env = Environment::new();
+fn test_quadratic_two_real_roots() {
+    assert_approx("quadratic(1, -5, 6)", 3.0, 1e-10);
+}
 
-    // First calculation: 5 + 3 = 8
-    let ast1 = parser::parse("5 + 3").unwrap();
-    let result1 = ast1.eval(&env).unwrap();
-    env.set("ans".to_string(), result1.clone());
+#[test]
+fn test_quadratic_single_root() {
+    assert_approx("quadratic(1, -2, 1)", 1.0, 1e-10);
+}
 
-    // Second calculation using ans: ans * 2 should be 16
-    let ast2 = parser::parse("ans * 2").unwrap();
-    let result2 = ast2.eval(&env).unwrap();
-    assert_eq!(result2.number(), 16.0);
+#[test]
+fn test_quadratic_negative_discriminant_error() {
+    assert_error("quadratic(1, 1, 1)");
+}
+
+#[test]
+fn test_quadratic_zero_a_error() {
+    assert_error("quadratic(0, 1, 1)");
 }

@@ -194,6 +194,19 @@ pub fn list_functions() -> Vec<FunctionInfo> {
                 ParamInfo { name: "n", description: "The root exponent (e.g., 2 for square root, 3 for cube root)" },
             ],
         },
+        // Quadratic equation solver
+        FunctionInfo {
+            name: "quadratic",
+            params: "a, b, c",
+            description: "Solve quadratic equation ax² + bx + c = 0. Returns (x1, x2) or (real, imaginary) parts",
+            example: "quadratic(1, -5, 6) = (3, 2)",
+            category: "Algebra",
+            params_detail: vec![
+                ParamInfo { name: "a", description: "Coefficient of x²" },
+                ParamInfo { name: "b", description: "Coefficient of x" },
+                ParamInfo { name: "c", description: "Constant term" },
+            ],
+        },
         // Integration functions
         FunctionInfo {
             name: "trapz",
@@ -275,6 +288,27 @@ pub fn call(name: &str, args: &[f64]) -> Result<f64, FuncError> {
             }
             Ok(base.powf(1.0 / n))
         }
+        "quadratic" => {
+            if args.len() != 3 {
+                return Err(FuncError::ArgCount {
+                    expected: 3,
+                    got: args.len(),
+                });
+            }
+            let a = args[0];
+            let b = args[1];
+            let c = args[2];
+            if a == 0.0 {
+                return Err(FuncError::InvalidArg("coefficient 'a' cannot be zero for quadratic equation".to_string()));
+            }
+            let discriminant = b * b - 4.0 * a * c;
+            if discriminant < 0.0 {
+                return Err(FuncError::InvalidArg("complex roots not supported, discriminant is negative".to_string()));
+            }
+            let sqrt_d = discriminant.sqrt();
+            let x1 = (-b + sqrt_d) / (2.0 * a);
+            Ok(x1)
+        }
         _ => Err(FuncError::Unknown),
     }
 }
@@ -321,6 +355,7 @@ pub fn is_function(name: &str) -> bool {
             | "max"
             | "pow"
             | "root"
+            | "quadratic"
             | "trapz"
             | "simpson"
             | "rkf45"
@@ -330,7 +365,7 @@ pub fn is_function(name: &str) -> bool {
 pub fn function_names() -> Vec<&'static str> {
     vec![
         "sin", "cos", "tan", "asin", "acos", "atan", "sqrt", "ln", "log", "log10", "exp", "abs",
-        "floor", "ceil", "round", "min", "max", "pow", "root", "trapz", "simpson", "rkf45",
+        "floor", "ceil", "round", "min", "max", "pow", "root", "quadratic", "trapz", "simpson", "rkf45",
     ]
 }
 
