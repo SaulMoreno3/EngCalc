@@ -94,12 +94,26 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Download all artifacts
+      - name: Download linux artifact
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
-          pattern: '*'
-          merge-multiple: true
+          name: linux-release
+          path: artifacts/linux
+
+      - name: Download windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-release
+          path: artifacts/windows
+
+      - name: Download macos artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-release
+          path: artifacts/macos
+
+      - name: List artifacts
+        run: ls -la artifacts/
 
       - name: Generate release tag
         id: tag
@@ -110,6 +124,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${{ steps.tag.outputs.tag }}" artifacts/ \
+          gh release create "${{ steps.tag.outputs.tag }}" \
+            artifacts/linux/engcalc-linux-x86_64.tar.gz \
+            artifacts/windows/engcalc-windows-x86_64.zip \
+            artifacts/macos/engcalc-macos-universal.dmg \
             --title "Release ${{ steps.tag.outputs.tag }}" \
             --generate-notes
