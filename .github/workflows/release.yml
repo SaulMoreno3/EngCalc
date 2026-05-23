@@ -43,10 +43,11 @@ jobs:
         run: cargo build --release
 
       - name: Package binary
+        shell: pwsh
         run: |
-          mkdir dist
-          copy target\release\engcalc.exe dist\engcalc.exe
-          Compress-Archive -Path dist\engcalc.exe -DestinationPath dist\engcalc-windows-x86_64.zip
+          New-Item -ItemType Directory -Force -Path dist
+          Copy-Item target\release\engcalc.exe dist\engcalc.exe
+          Compress-Archive -Path dist\engcalc.exe -DestinationPath dist\engcalc-windows-x86_64.zip -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -61,7 +62,8 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        targets: x86_64-apple-darwin,aarch64-apple-darwin
+        with:
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
 
       - name: Build release binary (universal)
         run: |
@@ -113,12 +115,12 @@ jobs:
           path: artifacts/macos
 
       - name: List artifacts
-        run: ls -la artifacts/
+        run: find artifacts -type f
 
       - name: Generate release tag
         id: tag
         run: |
-          echo "tag=main-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "tag=main-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         env:
