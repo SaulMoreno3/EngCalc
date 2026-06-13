@@ -1,6 +1,7 @@
 mod app;
 mod core;
 mod storage;
+#[cfg(test)]
 mod tests;
 mod tui;
 
