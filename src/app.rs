@@ -42,7 +42,7 @@ impl App {
         if let Some(last_entry) = history.entries.last() {
             // Restore variables
             for (name, value) in &last_entry.workspace.variables {
-                let val = crate::core::value::Value::new(*value);
+                let val = value.to_value();
                 env.set(name.clone(), val.clone());
                 user_vars.insert(name.clone(), val);
             }
@@ -786,11 +786,11 @@ impl App {
 
     /// Capture current workspace state (variables and functions)
     fn capture_workspace(&self) -> crate::storage::history::WorkspaceState {
-        use crate::storage::history::{UserFunctionDef, WorkspaceState};
+        use crate::storage::history::{StoredValue, UserFunctionDef, WorkspaceState};
 
         let mut variables = std::collections::HashMap::new();
         for (name, value) in &self.user_vars {
-            variables.insert(name.clone(), value.number());
+            variables.insert(name.clone(), StoredValue::from_value(value));
         }
 
         let mut functions = std::collections::HashMap::new();
@@ -822,7 +822,7 @@ impl App {
 
         // Restore variables
         for (name, value) in &workspace.variables {
-            let val = crate::core::value::Value::new(*value);
+            let val = value.to_value();
             self.env.set(name.clone(), val.clone());
             self.user_vars.insert(name.clone(), val);
         }

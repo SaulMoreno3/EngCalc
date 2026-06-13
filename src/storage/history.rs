@@ -7,8 +7,39 @@ use std::time::SystemTime;
 /// Represents the workspace state at a point in time
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct WorkspaceState {
-    pub variables: HashMap<String, f64>,
+    pub variables: HashMap<String, StoredValue>,
     pub functions: HashMap<String, UserFunctionDef>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(untagged)]
+pub enum StoredValue {
+    Detailed { number: f64, unit: Option<String> },
+    Legacy(f64),
+}
+
+impl StoredValue {
+    pub fn from_value(value: &crate::core::value::Value) -> Self {
+        Self::Detailed {
+            number: value.number(),
+            unit: value.unit.as_ref().map(ToString::to_string),
+        }
+    }
+
+    pub fn to_value(&self) -> crate::core::value::Value {
+        let (number, unit) = match self {
+            Self::Detailed { number, unit } => (*number, unit.as_deref()),
+            Self::Legacy(number) => (*number, None),
+        };
+
+        if let Some(unit) = unit {
+            if let Ok(compound) = crate::core::units::parse_compound_unit(unit) {
+                return crate::core::value::Value::with_unit(number, compound);
+            }
+        }
+
+        crate::core::value::Value::new(number)
+    }
 }
 
 /// Serializable function definition
@@ -120,5 +151,32 @@ impl History {
 impl Default for History {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::StoredValue;
+    use crate::core::formatter;
+    use crate::core::units;
+    use crate::core::value::Value;
+
+    #[test]
+    fn stored_value_preserves_units() {
+        let unit = units::parse_compound_unit("m/s").unwrap();
+        let value = Value::with_unit(10.0, unit);
+
+        let stored = StoredValue::from_value(&value);
+        let restored = stored.to_value();
+
+        assert_eq!(formatter::format_value(&restored), "10 m/s");
+    }
+
+    #[test]
+    fn stored_value_reads_legacy_numbers() {
+        let stored: StoredValue = serde_json::from_str("42").unwrap();
+        let restored = stored.to_value();
+
+        assert_eq!(formatter::format_value(&restored), "42");
     }
 }
