@@ -16,6 +16,7 @@ use ratatui::Terminal;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut terminal = setup_terminal()?;
+    let _terminal_guard = TerminalGuard;
     let mut app = app::App::new();
 
     while app.running {
@@ -31,8 +32,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    restore_terminal()?;
     Ok(())
+}
+
+struct TerminalGuard;
+
+impl Drop for TerminalGuard {
+    fn drop(&mut self) {
+        let _ = restore_terminal();
+    }
 }
 
 fn setup_terminal() -> io::Result<Terminal<CrosstermBackend<io::Stdout>>> {
