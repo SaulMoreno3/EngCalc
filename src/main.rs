@@ -23,13 +23,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     while app.running {
         terminal.draw(|f| tui::render::render(f, &mut app))?;
 
-        match tui::events::poll_event(Duration::from_millis(50))? {
-            tui::events::AppEvent::Key(key) => {
-                if let Some(action) = tui::events::handle_key(key) {
-                    app.handle_action(action);
-                }
+        if let tui::events::AppEvent::Key(key) =
+            tui::events::poll_event(Duration::from_millis(50))?
+        {
+            if let Some(action) = tui::events::handle_key(key) {
+                app.handle_action(action);
             }
-            _ => {}
         }
     }
 
