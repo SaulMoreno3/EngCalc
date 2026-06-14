@@ -296,6 +296,12 @@ fn test_unmatched_parentheses() {
 }
 
 #[test]
+fn test_leading_power_operator_errors() {
+    assert_error("^3");
+    assert_error("^-");
+}
+
+#[test]
 fn test_formatter_integer_display() {
     let val = crate::core::value::Value::new(12.0);
     assert_eq!(formatter::format_value(&val), "12");

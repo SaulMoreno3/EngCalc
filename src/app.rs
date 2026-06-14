@@ -5,6 +5,14 @@ use crate::tui::events::Action;
 use crate::tui::input::InputBuffer;
 use std::collections::HashMap;
 
+fn char_to_byte_index(input: &str, char_index: usize) -> usize {
+    input
+        .char_indices()
+        .nth(char_index)
+        .map(|(byte_index, _)| byte_index)
+        .unwrap_or(input.len())
+}
+
 pub struct App {
     pub input: InputBuffer,
     pub env: Environment,
@@ -92,15 +100,15 @@ impl App {
     pub fn update_signature_help(&mut self) {
         let content = self.input.content();
         let cursor = self.input.cursor_pos();
-        let before_cursor = &content[..cursor.min(content.len())];
+        let cursor_byte = char_to_byte_index(&content, cursor);
+        let before_cursor = &content[..cursor_byte];
 
         // Scan backwards from cursor, tracking paren depth.
         // We want the '(' that is NOT closed before the cursor (depth 0 -> -1).
         let mut depth: i32 = 0;
         let mut paren_pos: Option<usize> = None;
 
-        for (i, ch) in before_cursor.chars().rev().enumerate() {
-            let pos = before_cursor.len() - 1 - i;
+        for (pos, ch) in before_cursor.char_indices().rev() {
             match ch {
                 ')' | ']' | '}' => depth += 1,
                 '(' | '[' | '{' => {
@@ -131,7 +139,7 @@ impl App {
                     // Count which parameter we're on by counting commas at depth 0
                     // after the target paren, up to the cursor.
                     // But we must skip commas inside nested parens.
-                    let after_paren = &content[paren_pos + 1..cursor.min(content.len())];
+                    let after_paren = &content[paren_pos + 1..cursor_byte];
                     let mut param_index = 0;
                     let mut inner_depth: i32 = 0;
                     for ch in after_paren.chars() {
@@ -160,9 +168,10 @@ impl App {
     pub fn update_autocomplete(&mut self) {
         let content = self.input.content();
         let cursor = self.input.cursor_pos();
+        let cursor_byte = char_to_byte_index(&content, cursor);
         
         // Get the word being typed (from last space or start to cursor)
-        let before_cursor = &content[..cursor.min(content.len())];
+        let before_cursor = &content[..cursor_byte];
         let word_start = before_cursor.rfind(|c: char| !c.is_alphanumeric() && c != '_')
             .map(|i| i + 1)
             .unwrap_or(0);
@@ -246,7 +255,8 @@ impl App {
         
         let content = self.input.content();
         let cursor = self.input.cursor_pos();
-        let before_cursor = &content[..cursor.min(content.len())];
+        let cursor_byte = char_to_byte_index(&content, cursor);
+        let before_cursor = &content[..cursor_byte];
         let word_start = before_cursor.rfind(|c: char| !c.is_alphanumeric() && c != '_')
             .map(|i| i + 1)
             .unwrap_or(0);
@@ -259,10 +269,10 @@ impl App {
         let new_content = format!("{}{}{}", 
             &content[..word_start],
             signature,
-            &content[cursor..]
+            &content[cursor_byte..]
         );
         
-        let new_cursor = word_start + signature.len();
+        let new_cursor = content[..word_start].chars().count() + signature.chars().count();
         self.input.set_content(new_content);
         self.input.set_cursor_pos(new_cursor);
         self.show_autocomplete = false;
@@ -845,5 +855,33 @@ impl App {
 impl Default for App {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{char_to_byte_index, App};
+    use crate::tui::events::Action;
+
+    #[test]
+    fn char_to_byte_index_handles_multibyte_text() {
+        assert_eq!(char_to_byte_index("α^3", 0), 0);
+        assert_eq!(char_to_byte_index("α^3", 1), "α".len());
+        assert_eq!(char_to_byte_index("α^3", 2), "α^".len());
+        assert_eq!(char_to_byte_index("α^3", 99), "α^3".len());
+    }
+
+    #[test]
+    fn partial_power_inputs_do_not_panic() {
+        for input in ["^3", "^-"] {
+            let mut app = App::new();
+            for ch in input.chars() {
+                app.handle_action(Action::InputChar(ch));
+            }
+            app.handle_action(Action::Eval);
+
+            assert!(app.last_error.is_some(), "{input} should be reported as an error");
+            assert!(app.running, "{input} should not stop the app");
+        }
     }
 }
