@@ -47,28 +47,34 @@ fn format_number(n: f64) -> String {
         };
     }
 
-    // Check if the number is effectively an integer
     if n.fract() == 0.0 && n.abs() < 1e15 {
-        // Check for very large/small integers that should use scientific notation
         if n.abs() >= 1e12 || (n.abs() < 1e-10 && n != 0.0) {
-            format!("{:.12e}", n)
+            format_dual_notation(n)
         } else {
             format!("{}", n as i64)
         }
     } else {
-        // For decimals, show up to 12 significant digits
-        let formatted = format!("{:.12}", n);
-        // Trim trailing zeros after decimal point
-        let trimmed = trimmed_decimal(&formatted);
+        let natural = format_natural(n);
 
-        // Check if scientific notation is better
         let abs = n.abs();
-        if abs >= 1e12 || (abs < 1e-10 && abs != 0.0) {
-            format!("{:.12e}", n)
+        if abs >= 1e12 || (abs < 1e-10 && abs != 0.0) || decimal_places(&natural) > 3 {
+            format!("{} ({:.12e})", natural, n)
         } else {
-            trimmed
+            natural
         }
     }
+}
+
+fn format_dual_notation(n: f64) -> String {
+    format!("{} ({:.12e})", format_natural(n), n)
+}
+
+fn format_natural(n: f64) -> String {
+    trimmed_decimal(&format!("{:.12}", n))
+}
+
+fn decimal_places(s: &str) -> usize {
+    s.split_once('.').map(|(_, decimals)| decimals.len()).unwrap_or(0)
 }
 
 fn trimmed_decimal(s: &str) -> String {

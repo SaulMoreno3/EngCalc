@@ -52,13 +52,18 @@ fn assert_result(input: &str, expected: &str) {
 #[allow(dead_code)]
 fn assert_approx(input: &str, expected: f64, tolerance: f64) {
     let result = eval(input).expect(&format!("Expected success for '{}', but got error", input));
-    let num: f64 = result
+    assert_formatted_approx(&result, expected, tolerance);
+}
+
+#[allow(dead_code)]
+fn assert_formatted_approx(result: &str, expected: f64, tolerance: f64) {
+    let numeric_part = result.split_whitespace().next().unwrap_or(&result);
+    let num: f64 = numeric_part
         .parse()
         .unwrap_or_else(|_| panic!("Failed to parse result '{}' as f64", result));
     assert!(
         (num - expected).abs() < tolerance,
-        "For '{}': expected ~{}, got {}",
-        input,
+        "expected ~{}, got {}",
         expected,
         result
     );
@@ -239,7 +244,7 @@ fn test_variable_chain() {
     let (_, env) = eval_with_env("r = 3").unwrap();
     let ast = parser::parse("pi * r^2").unwrap();
     let val = ast.eval(&env).unwrap();
-    assert_approx(&formatter::format_value(&val), 28.2743338823, 1e-6);
+    assert_formatted_approx(&formatter::format_value(&val), 28.2743338823, 1e-6);
 }
 
 #[test]
@@ -312,6 +317,22 @@ fn test_formatter_decimal_display() {
     let val = crate::core::value::Value::new(3.14159);
     let result = formatter::format_value(&val);
     assert!(result.starts_with("3.14"));
+    assert!(result.contains("(3.141590000000e0)"));
+}
+
+#[test]
+fn test_formatter_short_decimal_display() {
+    let val = crate::core::value::Value::new(3.7);
+    assert_eq!(formatter::format_value(&val), "3.7");
+}
+
+#[test]
+fn test_formatter_unit_decimal_dual_notation() {
+    let unit = crate::core::units::parse_compound_unit("m/s").unwrap();
+    let val = crate::core::value::Value::with_unit(0.000333333333, unit);
+    let result = formatter::format_value(&val);
+
+    assert_eq!(result, "0.000333333333 (3.333333330000e-4) m/s");
 }
 
 #[test]
