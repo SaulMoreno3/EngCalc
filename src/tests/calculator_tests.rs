@@ -317,7 +317,7 @@ fn test_formatter_decimal_display() {
     let val = crate::core::value::Value::new(3.14159);
     let result = formatter::format_value(&val);
     assert!(result.starts_with("3.14"));
-    assert!(result.contains("(3.141590000000e0)"));
+    assert!(result.contains("(3.14159e0)"));
 }
 
 #[test]
@@ -332,7 +332,7 @@ fn test_formatter_unit_decimal_dual_notation() {
     let val = crate::core::value::Value::with_unit(0.000333333333, unit);
     let result = formatter::format_value(&val);
 
-    assert_eq!(result, "0.000333333333 (3.333333330000e-4) m/s");
+    assert_eq!(result, "0.000333333333 (3.33333333e-4) m/s");
 }
 
 #[test]

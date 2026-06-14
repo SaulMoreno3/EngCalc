@@ -58,7 +58,7 @@ fn format_number(n: f64) -> String {
 
         let abs = n.abs();
         if abs >= 1e12 || (abs < 1e-10 && abs != 0.0) || decimal_places(&natural) > 3 {
-            format!("{} ({:.12e})", natural, n)
+            format!("{} ({})", natural, format_scientific(n))
         } else {
             natural
         }
@@ -66,11 +66,20 @@ fn format_number(n: f64) -> String {
 }
 
 fn format_dual_notation(n: f64) -> String {
-    format!("{} ({:.12e})", format_natural(n), n)
+    format!("{} ({})", format_natural(n), format_scientific(n))
 }
 
 fn format_natural(n: f64) -> String {
     trimmed_decimal(&format!("{:.12}", n))
+}
+
+fn format_scientific(n: f64) -> String {
+    let raw = format!("{:.12e}", n);
+    let Some((mantissa, exponent)) = raw.split_once('e') else {
+        return raw;
+    };
+
+    format!("{}e{}", trimmed_decimal(mantissa), exponent)
 }
 
 fn decimal_places(s: &str) -> usize {
